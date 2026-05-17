@@ -1,0 +1,35 @@
+replicaCount: 3
+
+image:
+  pullPolicy: IfNotPresent
+
+ingress:
+  enabled: true
+  className: nginx
+  host: pingsvc.example.com
+  tls:
+    - secretName: pingsvc-tls
+      hosts:
+        - pingsvc.example.com
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+networkPolicy:
+  enabled: true
+  ingressControllerNamespace: ingress-nginx
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
