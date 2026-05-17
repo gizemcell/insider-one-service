@@ -1,0 +1,14 @@
+# Build output
+/pingsvc
+*.exe
+
+# Environment — copy example.env → .env and fill in real values
+.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
