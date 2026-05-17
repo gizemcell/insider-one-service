@@ -3,6 +3,7 @@ WORKDIR /app
 COPY go.mod ./
 RUN go mod download
 COPY . .
+RUN go test ./...
 ARG VERSION=dev
 RUN go build -ldflags "-X main.version=${VERSION}" -o pingsvc .
 

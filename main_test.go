@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -18,7 +19,7 @@ func TestHandlers(t *testing.T) {
 	}{
 		{"ping", handlePing, http.StatusOK, "pong\n", "text/plain; charset=utf-8"},
 		{"healthz", handleHealthz, http.StatusOK, `{"status":"ok"}` + "\n", "application/json; charset=utf-8"},
-		{"version", handleVersion, http.StatusOK, `{"version":"dev"}` + "\n", "application/json; charset=utf-8"},
+		{"version", handleVersion, http.StatusOK, fmt.Sprintf("{\"version\":%q}\n", version), "application/json; charset=utf-8"},
 	}
 
 	for _, tt := range tests {
