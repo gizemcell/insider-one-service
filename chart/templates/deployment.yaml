@@ -29,16 +29,23 @@ spec:
             - secretRef:
                 name: {{ include "pingsvc.name" . }}
             {{- end }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            failureThreshold: 12
+            periodSeconds: 5
           livenessProbe:
             httpGet:
-              path: /ping
+              path: /healthz
               port: http
-            initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /healthz
               port: http
-            initialDelaySeconds: 5
             periodSeconds: 10
-          resources: {}
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
