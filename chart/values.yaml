@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: pingsvc
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  host: pingsvc.local
+  path: /
+  tls: []
+
+config:
+  addr: ":8080"
+
+secret:
+  # Add sensitive key/value pairs here — values will be base64-encoded automatically.
+  # example:
+  #   someApiKey: ""

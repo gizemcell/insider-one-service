@@ -2,7 +2,7 @@
 /pingsvc
 *.exe
 
-# Environment — copy example.env → .env and fill in real values
+# Environment — copy .env.example → .env and fill in real values
 .env
 
 # IDE
