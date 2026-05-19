@@ -1,5 +1,5 @@
 # Build output
-/pingsvc
+/insider-service
 *.exe
 
 # Environment — copy .env.example → .env and fill in real values

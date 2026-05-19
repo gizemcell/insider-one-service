@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "pingsvc.name" . }}
+  name: {{ include "insider-service.name" . }}
   labels:
-    {{- include "pingsvc.labels" . | nindent 4 }}
+    {{- include "insider-service.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    {{- include "pingsvc.selectorLabels" . | nindent 4 }}
+    {{- include "insider-service.selectorLabels" . | nindent 4 }}
   ports:
     - name: http
       port: {{ .Values.service.port }}
