@@ -5,12 +5,12 @@ RUN go mod download
 COPY . .
 RUN go test ./...
 ARG VERSION=dev
-RUN go build -ldflags "-X main.version=${VERSION}" -o pingsvc .
+RUN go build -ldflags "-X main.version=${VERSION}" -o insider-service .
 
 FROM alpine:3.20
 RUN adduser -D -u 1001 app
 USER app
 WORKDIR /app
-COPY --from=builder /app/pingsvc .
+COPY --from=builder /app/insider-service .
 EXPOSE 8080
-ENTRYPOINT ["./pingsvc"]
+ENTRYPOINT ["./insider-service"]
