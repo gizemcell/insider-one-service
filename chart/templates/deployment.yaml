@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "pingsvc.name" . }}
+  name: {{ include "insider-service.name" . }}
   labels:
-    {{- include "pingsvc.labels" . | nindent 4 }}
+    {{- include "insider-service.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "pingsvc.selectorLabels" . | nindent 6 }}
+      {{- include "insider-service.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "pingsvc.selectorLabels" . | nindent 8 }}
+        {{- include "insider-service.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: pingsvc
+        - name: insider-service
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -24,10 +24,10 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ include "pingsvc.name" . }}
+                name: {{ include "insider-service.name" . }}
             {{- if .Values.secret }}
             - secretRef:
-                name: {{ include "pingsvc.name" . }}
+                name: {{ include "insider-service.name" . }}
             {{- end }}
           startupProbe:
             httpGet:

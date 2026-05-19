@@ -5,7 +5,7 @@ image:
 
 ingress:
   enabled: true
-  host: pingsvc.dev.local
+  host: insider-service.dev.local
 
 resources:
   requests:

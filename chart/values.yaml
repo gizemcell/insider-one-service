@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: pingsvc
+  repository: insider-service
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -13,7 +13,7 @@ service:
 ingress:
   enabled: false
   className: ""
-  host: pingsvc.local
+  host: insider-service.local
   path: /
   tls: []
 

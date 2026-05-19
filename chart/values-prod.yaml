@@ -6,11 +6,11 @@ image:
 ingress:
   enabled: true
   className: nginx
-  host: pingsvc.example.com
+  host: insider-service.example.com
   tls:
-    - secretName: pingsvc-tls
+    - secretName: insider-service-tls
       hosts:
-        - pingsvc.example.com
+        - insider-service.example.com
 
 autoscaling:
   enabled: true
