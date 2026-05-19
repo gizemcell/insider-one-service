@@ -6,11 +6,11 @@ image:
 ingress:
   enabled: true
   className: nginx
-  host: insider-service.example.com
+  host: insider-service.prod.local
   tls:
     - secretName: insider-service-tls
       hosts:
-        - insider-service.example.com
+        - insider-service.prod.local
 
 autoscaling:
   enabled: true
