@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine3.21 AS builder
+FROM golang:1.24-alpine AS builder
 WORKDIR /app
 COPY go.mod ./
 RUN go mod download
@@ -7,8 +7,8 @@ RUN go test ./...
 ARG VERSION=dev
 RUN go build -ldflags "-X main.version=${VERSION}" -o insider-service .
 
-FROM alpine:3.21
-RUN adduser -D -u 1001 app
+FROM alpine:3.22
+RUN apk upgrade --no-cache && adduser -D -u 1001 app
 USER app
 WORKDIR /app
 COPY --from=builder /app/insider-service .
