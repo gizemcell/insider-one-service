@@ -51,6 +51,9 @@ jobs:
       - name: Run tests
         run: go test -race -coverprofile=coverage.out ./...
 
+      - name: Go vulnerability check
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
       - uses: actions/upload-artifact@v4
         with:
           name: coverage
@@ -108,8 +111,9 @@ jobs:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           format: sarif
           output: trivy-results.sarif
-          exit-code: "1"         # fail the job if findings exist
-          ignore-unfixed: true   # skip CVEs with no fix yet
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os          # OS packages only; Go binary CVEs are caught by govulncheck
           severity: CRITICAL,HIGH
 
       # Upload SARIF to the Security tab regardless of whether the scan passed.
