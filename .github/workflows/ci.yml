@@ -154,5 +154,5 @@ jobs:
           aws ssm send-command \
             --instance-ids "i-05bf368f39ef7d16d" \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["cd /home/ubuntu/insider-service && git pull", "helm upgrade --install insider-service ./insider-service -f ./insider-service/values-prod.yaml --set image.tag=${{ github.sha }} -n prod"]' \
+            --parameters 'commands=["cd /home/ubuntu/insider-service && git pull", "helm upgrade --install insider-service ./insider-service -f ./insider-service/values-prod.yaml --set image.tag=${{ github.sha }} -n prod --create-namespace"]' \
             --comment "Deployed via GitHub Actions"
