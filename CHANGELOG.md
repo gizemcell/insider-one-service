@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/);
 versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.1.1] — 2026-05-23
+
+### Added
+- Introduced ArgoCD-based GitOps deployment workflow
+- Added automated Helm manifest updates for dev and prod environments
+- Added semantic version-based production release flow
+- Added environment-specific deployment separation between dev and prod namespaces
+
+### Changed
+- Aligned GHCR image tags with Git semantic version tags for production releases
+- Switched development deployments to immutable SHA-based image tags
 
 ## [0.1.0] — 2026-05-20
 
