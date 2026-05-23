@@ -4,20 +4,22 @@ kind: Ingress
 metadata:
   name: {{ include "insider-service.name" . }}
   labels:
-    {{- include "insider-service.labels" . | nindent 4 }}
+{{ include "insider-service.labels" . | nindent 4 }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
+
   {{- if .Values.ingress.tls }}
   tls:
-    {{- toYaml .Values.ingress.tls | nindent 4 }}
+{{ toYaml .Values.ingress.tls | nindent 4 }}
   {{- end }}
+
   rules:
     - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
-          - path: {{ .Values.ingress.path }}
+          - path: {{ .Values.ingress.path | default "/" }}
             pathType: Prefix
             backend:
               service:
