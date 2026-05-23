@@ -188,7 +188,7 @@ jobs:
 
           git commit -m "release(prod): ${GITHUB_REF_NAME}" || echo "No changes"
 
-          git push
+          git push origin HEAD:main
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
