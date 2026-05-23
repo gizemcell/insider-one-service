@@ -3,13 +3,13 @@ kind: Service
 metadata:
   name: {{ include "insider-service.name" . }}
   labels:
-    {{- include "insider-service.labels" . | nindent 4 }}
+{{ include "insider-service.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.type | default "ClusterIP" }}
   selector:
-    {{- include "insider-service.selectorLabels" . | nindent 4 }}
+{{ include "insider-service.selectorLabels" . | nindent 4 }}
   ports:
     - name: http
-      port: {{ .Values.service.port }}
-      targetPort: http
+      port: {{ .Values.service.port | default 80 }}
+      targetPort: 8080
       protocol: TCP
