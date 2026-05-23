@@ -1,16 +1,17 @@
 replicaCount: 3
 
 image:
+  tag: v0.1.0
   pullPolicy: IfNotPresent
 
 ingress:
   enabled: true
   className: nginx
-  host: insider-service.prod.local
+  host: api.insider-service.com
   tls:
     - secretName: insider-service-tls
       hosts:
-        - insider-service.prod.local
+        - api.insider-service.com
 
 autoscaling:
   enabled: true
@@ -28,8 +29,8 @@ podDisruptionBudget:
 
 resources:
   requests:
-    cpu: 100m
-    memory: 64Mi
+    cpu: 200m
+    memory: 128Mi
   limits:
     cpu: 500m
-    memory: 128Mi
+    memory: 256Mi

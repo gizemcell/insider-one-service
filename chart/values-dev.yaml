@@ -1,11 +1,12 @@
 replicaCount: 1
 
 image:
+  tag: sha-latest
   pullPolicy: Always
 
 ingress:
   enabled: true
-  host: insider-service.dev.local
+  host: dev.api.insider.local
 
 resources:
   requests:
