@@ -1,8 +1,8 @@
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
-COPY go.mod ./
+COPY app/go.mod ./
 RUN go mod download
-COPY . .
+COPY app/ .
 RUN go test ./...
 ARG VERSION=dev
 RUN go build -ldflags "-X main.version=${VERSION}" -o insider-service .

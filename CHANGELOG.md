@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/);
 versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Moved Go source and `go.mod` into `app/` subdirectory
+- Updated Dockerfile to `COPY app/ .` to avoid duplicate module root
+- Updated CI workflow `go-version-file`, `golangci-lint`, `go test`, and `govulncheck` steps to use `app/` working directory
+
 ## [0.1.0] — 2026-05-20
 
 ### Added
