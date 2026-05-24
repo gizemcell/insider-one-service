@@ -34,6 +34,41 @@ func recordRequest(method, path, status string) {
 	metricsMu.Unlock()
 }
 
+// latencyBuckets are the histogram upper bounds in seconds (standard Prometheus defaults).
+var latencyBuckets = []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10}
+
+type latencyKey struct{ method, path string }
+
+type latencyData struct {
+	buckets []uint64 // cumulative count per latencyBuckets[i] upper bound
+	sum     float64
+	count   uint64
+}
+
+var (
+	latencyMu   sync.Mutex
+	latencyHist = map[latencyKey]*latencyData{}
+)
+
+func recordLatency(method, path string, dur time.Duration) {
+	secs := dur.Seconds()
+	k := latencyKey{method, path}
+	latencyMu.Lock()
+	d := latencyHist[k]
+	if d == nil {
+		d = &latencyData{buckets: make([]uint64, len(latencyBuckets))}
+		latencyHist[k] = d
+	}
+	for i, le := range latencyBuckets {
+		if secs <= le {
+			d.buckets[i]++
+		}
+	}
+	d.sum += secs
+	d.count++
+	latencyMu.Unlock()
+}
+
 // statusWriter wraps ResponseWriter to capture the written status code.
 type statusWriter struct {
 	http.ResponseWriter
@@ -120,22 +155,51 @@ func handleVersion(w http.ResponseWriter, _ *http.Request) {
 	fmt.Fprintf(w, "{\"version\":%q}\n", version)
 }
 
-// handleMetrics serves a Prometheus text-format counter for every
-// (method, path, status) combination seen since startup.
+// handleMetrics serves Prometheus text-format metrics: request counters and
+// latency histograms for every (method, path) combination seen since startup.
 func handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	metricsMu.Lock()
-	snapshot := make(map[metricKey]uint64, len(reqTotals))
+	reqSnap := make(map[metricKey]uint64, len(reqTotals))
 	for k, v := range reqTotals {
-		snapshot[k] = v
+		reqSnap[k] = v
 	}
 	metricsMu.Unlock()
 
+	latencyMu.Lock()
+	latSnap := make(map[latencyKey]*latencyData, len(latencyHist))
+	for k, d := range latencyHist {
+		cp := &latencyData{
+			buckets: make([]uint64, len(d.buckets)),
+			sum:     d.sum,
+			count:   d.count,
+		}
+		copy(cp.buckets, d.buckets)
+		latSnap[k] = cp
+	}
+	latencyMu.Unlock()
+
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+
 	fmt.Fprintln(w, "# HELP http_requests_total Total number of HTTP requests.")
 	fmt.Fprintln(w, "# TYPE http_requests_total counter")
-	for k, v := range snapshot {
+	for k, v := range reqSnap {
 		fmt.Fprintf(w, "http_requests_total{method=%q,path=%q,status=%q} %d\n",
 			k.method, k.path, k.status, v)
+	}
+
+	fmt.Fprintln(w, "# HELP http_request_duration_seconds HTTP request latency histogram.")
+	fmt.Fprintln(w, "# TYPE http_request_duration_seconds histogram")
+	for k, d := range latSnap {
+		for i, le := range latencyBuckets {
+			fmt.Fprintf(w, "http_request_duration_seconds_bucket{method=%q,path=%q,le=\"%g\"} %d\n",
+				k.method, k.path, le, d.buckets[i])
+		}
+		fmt.Fprintf(w, "http_request_duration_seconds_bucket{method=%q,path=%q,le=\"+Inf\"} %d\n",
+			k.method, k.path, d.count)
+		fmt.Fprintf(w, "http_request_duration_seconds_sum{method=%q,path=%q} %g\n",
+			k.method, k.path, d.sum)
+		fmt.Fprintf(w, "http_request_duration_seconds_count{method=%q,path=%q} %d\n",
+			k.method, k.path, d.count)
 	}
 }
 
@@ -150,14 +214,16 @@ func logRequests(next http.Handler) http.Handler {
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		start := time.Now()
 		next.ServeHTTP(sw, r)
+		dur := time.Since(start)
 
 		recordRequest(r.Method, r.URL.Path, fmt.Sprintf("%d", sw.status))
+		recordLatency(r.Method, r.URL.Path, dur)
 		slog.Info("request",
 			"request_id", id,
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", sw.status,
-			"duration_ms", time.Since(start).Milliseconds(),
+			"duration_ms", dur.Milliseconds(),
 		)
 	})
 }
