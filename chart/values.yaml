@@ -24,3 +24,6 @@ networkPolicy:
 
 podDisruptionBudget:
   enabled: false
+
+monitoring:
+  enabled: true
