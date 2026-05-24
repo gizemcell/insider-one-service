@@ -1,0 +1,16 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "insider-service.name" . }}
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      {{- include "insider-service.selectorLabels" . | nindent 6 }}
+
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
