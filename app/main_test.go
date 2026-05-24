@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestHandlers(t *testing.T) {
@@ -65,6 +66,12 @@ func TestHandleMetrics(t *testing.T) {
 	metricsMu.Lock()
 	reqTotals = map[metricKey]uint64{}
 	metricsMu.Unlock()
+	latencyMu.Lock()
+	latencyHist = map[latencyKey]*latencyData{}
+	latencyMu.Unlock()
+
+	// Seed one latency observation so the histogram block appears.
+	recordLatency("GET", "/ping", 5*time.Millisecond)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
@@ -80,8 +87,18 @@ func TestHandleMetrics(t *testing.T) {
 		t.Errorf("Content-Type = %q, want text/plain", ct)
 	}
 	body, _ := io.ReadAll(res.Body)
-	if !strings.Contains(string(body), "http_requests_total") {
-		t.Errorf("body missing http_requests_total:\n%s", body)
+	s := string(body)
+	if !strings.Contains(s, "http_requests_total") {
+		t.Errorf("body missing http_requests_total:\n%s", s)
+	}
+	if !strings.Contains(s, "http_request_duration_seconds_bucket") {
+		t.Errorf("body missing http_request_duration_seconds_bucket:\n%s", s)
+	}
+	if !strings.Contains(s, "http_request_duration_seconds_sum") {
+		t.Errorf("body missing http_request_duration_seconds_sum:\n%s", s)
+	}
+	if !strings.Contains(s, "http_request_duration_seconds_count") {
+		t.Errorf("body missing http_request_duration_seconds_count:\n%s", s)
 	}
 }
 
@@ -89,6 +106,9 @@ func TestLogRequestsRecordsMetrics(t *testing.T) {
 	metricsMu.Lock()
 	reqTotals = map[metricKey]uint64{}
 	metricsMu.Unlock()
+	latencyMu.Lock()
+	latencyHist = map[latencyKey]*latencyData{}
+	latencyMu.Unlock()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ping", handlePing)
