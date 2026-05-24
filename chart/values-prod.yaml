@@ -8,10 +8,10 @@ ingress:
   enabled: true
   className: nginx
   host: api.insider-service.com
-  tls:
-    - secretName: insider-service-tls
-      hosts:
-        - api.insider-service.com
+  #tls:
+  # - secretName: insider-service-tls
+  #  hosts:
+  #   - api.insider-service.com
 
 autoscaling:
   enabled: true
