@@ -60,3 +60,69 @@ func TestRoutingMethodGuard(t *testing.T) {
 		t.Errorf("POST /ping status = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
 	}
 }
+
+func TestHandleMetrics(t *testing.T) {
+	metricsMu.Lock()
+	reqTotals = map[metricKey]uint64{}
+	metricsMu.Unlock()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	handleMetrics(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", res.StatusCode)
+	}
+	if ct := res.Header.Get("Content-Type"); !strings.Contains(ct, "text/plain") {
+		t.Errorf("Content-Type = %q, want text/plain", ct)
+	}
+	body, _ := io.ReadAll(res.Body)
+	if !strings.Contains(string(body), "http_requests_total") {
+		t.Errorf("body missing http_requests_total:\n%s", body)
+	}
+}
+
+func TestLogRequestsRecordsMetrics(t *testing.T) {
+	metricsMu.Lock()
+	reqTotals = map[metricKey]uint64{}
+	metricsMu.Unlock()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /ping", handlePing)
+	handler := logRequests(mux)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	handler.ServeHTTP(rec, req)
+
+	metricsMu.Lock()
+	count := reqTotals[metricKey{"GET", "/ping", "200"}]
+	metricsMu.Unlock()
+
+
+	if count != 1 {
+		t.Errorf("want 1 request recorded, got %d", count)
+	}
+}
+
+func TestLogRequestsAttachesRequestID(t *testing.T) {
+	var gotID string
+
+	inner := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		if id, ok := r.Context().Value(ctxKey{}).(string); ok {
+			gotID = id
+		}
+	})
+	handler := logRequests(inner)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	handler.ServeHTTP(rec, req)
+
+	if len(gotID) != 16 {
+		t.Errorf("request_id = %q, want 16-char hex string", gotID)
+	}
+}

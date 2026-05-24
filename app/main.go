@@ -4,17 +4,58 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
 
 var version = "v1.0.0"
 
+// ctxKey is the unexported context key for request IDs.
+type ctxKey struct{}
+
+// metricKey identifies a unique combination of method, path, and status.
+type metricKey struct{ method, path, status string }
+
+var (
+	metricsMu sync.Mutex
+	reqTotals = map[metricKey]uint64{}
+)
+
+func recordRequest(method, path, status string) {
+	k := metricKey{method, path, status}
+	metricsMu.Lock()
+	reqTotals[k]++
+	metricsMu.Unlock()
+}
+
+// statusWriter wraps ResponseWriter to capture the written status code.
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (sw *statusWriter) WriteHeader(code int) {
+	sw.status = code
+	sw.ResponseWriter.WriteHeader(code)
+}
+
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				a.Key = "timestamp"
+			}
+			return a
+		},
+	}))
+	slog.SetDefault(logger)
+
 	addr := os.Getenv("ADDR")
 	if addr == "" {
 		addr = ":8080"
@@ -28,6 +69,7 @@ func main() {
 	mux.HandleFunc("GET /ping", handlePing)
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /version", handleVersion)
+	mux.HandleFunc("GET /metrics", handleMetrics)
 
 	srv := &http.Server{
 		Addr:              addr,
@@ -38,56 +80,84 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	// Run the server in a goroutine so main can wait for a shutdown signal.
 	go func() {
-		log.Printf("listening on %s (version=%s)", addr, version)
+		slog.Info("listening", "addr", addr, "version", version)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("server error: %v", err)
+			slog.Error("server error", "err", err)
+			os.Exit(1)
 		}
 	}()
 
-	// Graceful shutdown on SIGINT/SIGTERM (important for clean rollouts).
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
-	log.Println("shutting down")
+	slog.Info("shutting down")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("graceful shutdown failed: %v", err)
+		slog.Error("graceful shutdown failed", "err", err)
+		os.Exit(1)
 	}
-	log.Println("stopped")
+	slog.Info("stopped")
 }
 
-// handlePing is a trivial liveness check used for quick "is it up" probing.
 func handlePing(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "pong")
 }
 
-// handleHealthz is the readiness/liveness endpoint for orchestrator probes.
-// Right now there are no dependencies to check, so it always reports OK.
-// Add dependency checks (DB, cache, etc.) here as the service grows.
 func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, `{"status":"ok"}`)
 }
 
-// handleVersion returns the build SHA so you can confirm exactly what's deployed.
 func handleVersion(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "{\"version\":%q}\n", version)
 }
 
-// logRequests is a minimal access-log middleware.
+// handleMetrics serves a Prometheus text-format counter for every
+// (method, path, status) combination seen since startup.
+func handleMetrics(w http.ResponseWriter, _ *http.Request) {
+	metricsMu.Lock()
+	snapshot := make(map[metricKey]uint64, len(reqTotals))
+	for k, v := range reqTotals {
+		snapshot[k] = v
+	}
+	metricsMu.Unlock()
+
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	fmt.Fprintln(w, "# HELP http_requests_total Total number of HTTP requests.")
+	fmt.Fprintln(w, "# TYPE http_requests_total counter")
+	for k, v := range snapshot {
+		fmt.Fprintf(w, "http_requests_total{method=%q,path=%q,status=%q} %d\n",
+			k.method, k.path, k.status, v)
+	}
+}
+
+// logRequests attaches a request_id to each request, records it in the
+// metrics counter, and emits a structured JSON access-log line.
 func logRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := fmt.Sprintf("%016x", rand.Uint64())
+		ctx := context.WithValue(r.Context(), ctxKey{}, id)
+		r = r.WithContext(ctx)
+
+		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		start := time.Now()
-		next.ServeHTTP(w, r)
-		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
+		next.ServeHTTP(sw, r)
+
+		recordRequest(r.Method, r.URL.Path, fmt.Sprintf("%d", sw.status))
+		slog.Info("request",
+			"request_id", id,
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", sw.status,
+			"duration_ms", time.Since(start).Milliseconds(),
+		)
 	})
 }
