@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  tag: sha-bf9d158
+  tag: sha-702d11a
   pullPolicy: Always
 
 ingress:
