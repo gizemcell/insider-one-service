@@ -72,39 +72,32 @@ git push origin main
 ### Live pod logs
 
 ```bash
-# Stream logs for all pods in namespace
-kubectl logs -l app.kubernetes.io/name=insider-service -n <ns> --follow
+# Stream logs for dev in namespace
+kubectl logs -l app.kubernetes.io/name=app-dev -n dev --follow
 
-# Last 200 lines from a specific pod
-kubectl logs <pod-name> -n <ns> --tail=200
-
-# Include previous (crashed) container
-kubectl logs <pod-name> -n <ns> --previous
+# Stream logs for prod in namespace
+kubectl logs -l app.kubernetes.io/name=app-prod -n prod --follow
 ```
 
-### Structured log filtering
-
-The service emits JSON logs. Use `jq` to filter:
-
-```bash
-# All 5xx responses
-kubectl logs -l app.kubernetes.io/name=insider-service -n prod --follow \
-  | jq 'select(.status >= 500)'
-
-# Errors only
-kubectl logs -l app.kubernetes.io/name=insider-service -n prod \
-  | jq 'select(.level == "ERROR")'
-
-# By request ID
-kubectl logs -l app.kubernetes.io/name=insider-service -n prod \
-  | jq 'select(.request_id == "<id>")'
-```
 
 ### Events (crash loops, OOM, scheduling failures)
 
 ```bash
 kubectl get events -n <ns> --sort-by='.lastTimestamp' | tail -30
+
+#for prod
+kubectl get events -n prod --sort-by='.lastTimestamp' | tail -
+
+#for dev
+kubectl get events -n dev --sort-by='.lastTimestamp' | tail -30
+
 kubectl describe pod <pod-name> -n <ns>
+
+#for prod
+kubectl get pods -n prod
+
+#for dev
+kubectl get pods -n dev
 ```
 
 ## 4. Health Check
@@ -122,6 +115,13 @@ curl http://api.insider-service.com:8080/ping
 
 # Metrics endpoint (through ingress)
 curl http://dev.api.insider.local:8080/metrics
+
+# argocd ui
+kubectl port-forward svc/argocd-server -n argocd 8080:443 --address 0.0.0.0
+
+#grafana ui
+kubectl port-forward svc/monitoring-grafana   -n monitoring 8080:80 --address 0.0.0.0
+
 ```
 
 ---

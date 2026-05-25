@@ -26,7 +26,7 @@ Secrets are injected into the Helm chart via `values-*.yaml` under the `secret:`
 2. Update the Kubernetes Secret directly (for an immediate rotation without a Git push):
 
    ```bash
-   kubectl create secret generic insider-service \
+   kubectl create secret generic app-prod \
      --from-literal=MY_SECRET_KEY=<new-value> \
      --dry-run=client -o yaml \
      | kubectl apply -f - -n prod
@@ -35,8 +35,8 @@ Secrets are injected into the Helm chart via `values-*.yaml` under the `secret:`
 3. Restart the deployment so pods mount the new value:
 
    ```bash
-   kubectl rollout restart deployment/insider-service -n prod
-   kubectl rollout status deployment/insider-service -n prod
+   kubectl rollout restart deployment/app-prod -n prod
+   kubectl rollout status deployment/app-prod -n prod
    ```
 
 4. Update `chart/values-prod.yaml` (via a secrets manager or sealed-secrets tooling) so ArgoCD does not overwrite the rotated value on the next sync.
@@ -44,7 +44,7 @@ Secrets are injected into the Helm chart via `values-*.yaml` under the `secret:`
 5. Verify the new secret is live:
 
    ```bash
-   kubectl exec -it deploy/insider-service -n prod -- env | grep MY_SECRET_KEY
+   kubectl exec -it deploy/app-prod -n prod -- env | grep MY_SECRET_KEY
    ```
 
 ### 2b. SSH keypair (EC2 access)
@@ -136,7 +136,7 @@ For Personal Access Tokens (PATs) used for ArgoCD repo access:
 2. Audit pod environment for exposed values:
 
    ```bash
-   kubectl get secret insider-service -n prod -o jsonpath='{.data}' | jq 'to_entries[] | {key: .key, value: (.value | @base64d)}'
+   kubectl get secret app-prod -n prod -o jsonpath='{.data}'\ | jq 'to_entries[] | {key: .key, value: (.value | @base64d)}'
    ```
 
 3. Check ArgoCD sync history for any unauthorized changes:
