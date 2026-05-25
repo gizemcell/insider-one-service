@@ -12,3 +12,14 @@
 
 # OS
 .DS_Store
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfstate.backup
+infra/*.tfvars
+infra/*.tfvars.json
+infra/crash.log
+infra/crash.*.log
+infra/*.tfplan
