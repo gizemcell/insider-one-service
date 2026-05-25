@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/);
 versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.1] — 2026-05-25
+
+### Added
+- Terraform IaC for AWS EC2 provisioning (Ubuntu 22.04, Elastic IP, Security Group)
+- Structured JSON logging via `slog` with `request_id`, method, path, status, and duration fields
+- Prometheus metrics endpoint (`/metrics`) with request counters and latency histograms
+- ServiceMonitor for Prometheus scraping, scoped to `dev` and `prod` namespaces
+- Error rate PrometheusRule alert
+- `RUNBOOK.md` — restart, rollback, log inspection, and health check procedures
+- `SECURITY.md` — secret rotation steps, security controls, and incident response playbook
+- `DECISIONS.md` — Architecture Decision Records (ADR-01 – ADR-03)
+
+### Fixed
+- Corrected open `if` condition in metrics handler
+
+### Reverted
+- Temporary replica scale-up used during load testing
+
 ## [0.1.1] — 2026-05-23
 
 ### Added
