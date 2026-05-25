@@ -500,16 +500,13 @@ helm upgrade --install kube-prometheus-stack \
 Access Grafana:
 
 ```sh
-kubectl port-forward \
-  -n monitoring \
-  svc/kube-prometheus-stack-grafana \
-  3000:80
+kubectl port-forward svc/monitoring-grafana -n monitoring 8080:80 --address 0.0.0.0
 ```
 
 Open:
 
 ```text
-http://localhost:3000
+http://3.69.148.213:8080/
 ```
 
 Default credentials:
@@ -692,21 +689,12 @@ pong
 
 ---
 
-## Runbook & operational docs
+## Runbook
 
 Operational documentation lives under:
 
 ```text
-docs/
 ```
-
-Included files:
-
-- `RUNBOOK.md`
-- `SECURITY.md`
-- `adr/ADR-01-helm.md`
-- `adr/ADR-02-base-image.md`
-- `adr/ADR-03-gitops.md`
 
 The runbook covers:
 
@@ -718,46 +706,6 @@ The runbook covers:
 
 ---
 
-## Evidence & screenshots
-
-Operational evidence is stored under:
-
-```text
-docs/screenshots/
-```
-
-Included screenshots:
-
-- `kubectl-get-pods.png`
-- `helm-list.png`
-- `helm-history.png`
-- `rollout-status.png`
-- `grafana-dashboard.png`
-- `grafana-alert.png`
-- `argocd-app.png`
-- `gh-actions-green-pipeline.png`
-
-Example:
-
-```md
-![Grafana Dashboard](docs/screenshots/grafana-dashboard.png)
-```
-
-```md
-![Helm History](docs/screenshots/helm-history.png)
-```
-
-These screenshots demonstrate:
-
-- healthy Kubernetes workloads
-- successful Helm deployments
-- rollout + rollback capability
-- active Grafana dashboards
-- Prometheus alerts
-- successful CI/CD runs
-- ArgoCD synchronization
-
----
 
 ## Tool decisions (ADRs)
 
@@ -862,4 +810,4 @@ Claude Code (`claude-sonnet-4-6`) and ChatGPT were used to assist with:
 
 All architectural decisions, infrastructure choices,
 and implementation details were authored, reviewed,
-and validated manually by the submitter.
+and validated manually.
