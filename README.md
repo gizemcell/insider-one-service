@@ -163,28 +163,6 @@ Example local environment configuration:
 
 ---
 
-## Repository structure
-
-```text
-.
-├── app/
-├── chart/
-├── infra/
-├── argocd/
-├── docs/
-│   ├── screenshots/
-│   ├── architecture.drawio
-│   └── architecture.png
-├── .github/workflows/
-├── Dockerfile
-├── README.md
-├── RUNBOOK.md
-├── SECURITY.md
-└── adr/
-```
-
----
-
 ## Local development
 
 ### Run tests
